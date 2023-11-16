@@ -46,16 +46,17 @@ class Coordinate:
         return not (self == other)
 
 
-class AccessPoint(Coordinate):
+class PA(Coordinate):
 
     def __init__(self, x: float, y: float, index: Optional[int]):
-        super(AccessPoint, self).__init__(x, y)
+        super(PA, self).__init__(x, y)
         self.index = index
+        self.possible_customers = []
 
     def __hash__(self):
         return hash(self.index)
 
-    def __eq__(self, other: 'AccessPoint'):
+    def __eq__(self, other: 'PA'):
         return self.index == other.index
 
     def get_neighbor_indexes(self) -> List[int]:
@@ -67,8 +68,11 @@ class Customer:
         self.consume = consume
         self.coordinates = coordinates
         self.index = index
+        self.point_idx = None
 
-    @cached
+    def connected(self) -> bool:
+        return self.point_idx is not None
+
     def get_closer_point(self, points: Collection['Coordinate'], distances: List[float] = None) -> 'Coordinate':
         return self.coordinates.get_closer_point(points=points, distances=distances)
 

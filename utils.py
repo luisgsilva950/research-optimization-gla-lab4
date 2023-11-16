@@ -31,3 +31,6 @@ def save_file(file_name: str, **kwargs) -> None:
 def load_file(file_name: str) -> Any:
     with open(file_name, 'r') as f:
         return json.load(f)
+
+
+DISTANCES = get_points_distances_from_file()
