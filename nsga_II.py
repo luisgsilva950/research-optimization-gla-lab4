@@ -1,3 +1,4 @@
+import random
 from typing import List
 
 import numpy as np
@@ -59,17 +60,18 @@ class NSGAII:
         print("Numero de pontos", count_pas, "Taxa de clientes atendidos", customers_count / len(self.customers),
               "Distância total", total_distance)
 
-        plotter = GraphicPlotter('Teste', connexions=[
-            (self.points[idx], [self.customers[cidx].coordinates for cidx in customers_idxs]) for idx, customers_idxs in
-            enumerate(solution) if customers_idxs])
-
-        plotter.plot()
-
         self.pas_count = count_pas
         self.total_distance = total_distance
         self.solution = solution
 
         return count_pas, total_distance, solution
+
+    def plot(self, idx: int = None):
+        plotter = GraphicPlotter(f'NSGA Solution {idx or random.randint(0, 100)}', connexions=[
+            (self.points[idx], [self.customers[cidx].coordinates for cidx in customers_idxs]) for idx, customers_idxs in
+            enumerate(self.solution) if customers_idxs])
+
+        plotter.plot()
 
     @staticmethod
     def from_csv() -> 'NSGAII':
