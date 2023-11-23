@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import numpy.random
 
+from graphic_plotter import GraphicPlotter
 from models import Customer, PA, Coordinate
 from utils import DISTANCES
 
@@ -42,6 +43,10 @@ class NSGAII:
 
         sorted_pas = np.argsort(self.priorities)
 
+        count, distance, solution = self.get_solution(sorted_pas=sorted_pas)
+
+    def get_solution(self, sorted_pas: List[int]):
+        count_pas, total_distance = 0, 0
         solution = [[] for _ in range(len(self.points))]
         customers_attended = set()
         for p in sorted_pas:
@@ -58,19 +63,26 @@ class NSGAII:
                 solution[p].append(c.index)
                 customers_attended.add(c.index)
                 consume = next_consume
-                self.total_distance += DISTANCES[c.index][p]
+                total_distance += DISTANCES[c.index][p]
 
-        count = 0
         customers_count = 0
         for idx, l in enumerate(solution):
             if not l:
                 continue
-            count += 1
+            count_pas += 1
             customers_count += len(l)
             print(idx, l, "\n")
 
-        print("Numero de pontos", count, "Taxa de clientes atendidos", customers_count / len(self.customers),
-              "Distância total", self.total_distance)
+        print("Numero de pontos", count_pas, "Taxa de clientes atendidos", customers_count / len(self.customers),
+              "Distância total", total_distance)
+
+        plotter = GraphicPlotter('Teste', connexions=[
+            (self.points[idx], [self.customers[cidx].coordinates for cidx in customers_idxs]) for idx, customers_idxs in
+            enumerate(solution) if customers_idxs])
+
+        plotter.plot()
+
+        return count_pas, total_distance, solution
 
     @staticmethod
     def from_csv() -> 'NSGAII':
