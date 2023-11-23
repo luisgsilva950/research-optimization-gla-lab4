@@ -1,5 +1,3 @@
-import datetime
-import random
 from typing import List
 
 import numpy as np
@@ -17,39 +15,24 @@ class NSGAII:
     max_consumed_capacity = 150
 
     def __init__(self, customers: List[Customer], points: List[PA],
-                 solution=None, active_points=None,
-                 penal: float = 0.0, penal_fitness: float = 0.0,
-                 fitness: float = 0.0, k: int = 1, total_distance: float = 0):
+                 solution=None, active_points=None):
         self.customers = customers or []
         self.points = points or []
-        self.k = k
-        self.fitness = fitness
-        self.penal_fitness = penal_fitness
-        self.penal = penal
         self.active_points = active_points or set()
-        self.total_distance = total_distance
+        self.solution = solution
+        self.total_distance = 0
+        self.pas_count = 0
         self.priorities = np.random.permutation(len(self.points))
 
         print(self.priorities)
 
-        for c in self.customers:
-            for p in self.points:
-                if DISTANCES[c.index][p.index] < self.max_distance:
-                    # ordenar por distancia
-                    p.possible_customers.append(c)
-
-        # for p in self.points:
-        #     print(f"Ponto: {p.index}, clientes: {[c.index for c in p.possible_customers]}")
-
-        sorted_pas = np.argsort(self.priorities)
-
-        count, distance, solution = self.get_solution(sorted_pas=sorted_pas)
-
-    def get_solution(self, sorted_pas: List[int]):
+    def get_solution(self, priorities: List[int] = None):
+        if not priorities:
+            priorities = np.random.permutation(len(self.points))
         count_pas, total_distance = 0, 0
         solution = [[] for _ in range(len(self.points))]
         customers_attended = set()
-        for p in sorted_pas:
+        for p in priorities:
             point = self.points[p]
             consume = 0
             for c in point.possible_customers:
@@ -82,6 +65,10 @@ class NSGAII:
 
         plotter.plot()
 
+        self.pas_count = count_pas
+        self.total_distance = total_distance
+        self.solution = solution
+
         return count_pas, total_distance, solution
 
     @staticmethod
@@ -111,27 +98,8 @@ class NSGAII:
     def plot_customers(self):
         import matplotlib.pyplot as plt
 
-        def get_customers() -> List[Customer]:
-            customers = []
-            with open('clientes.csv') as file:
-                content = file.readlines()
-                for index, row in enumerate(content):
-                    row = row.split(",")
-                    customer = Customer(coordinates=Coordinate(x=float(row[0]), y=float(row[1])),
-                                        consume=float(row[2]),
-                                        index=index)
-                    customers.append(customer)
-            return customers
-
-        def get_pas() -> List[PA]:
-            points = []
-            for x in range(0, 1010, 20):
-                for y in range(0, 1010, 20):
-                    points.append(PA(x=x, y=y, index=len(points)))
-            return points
-
-        customers = get_customers()
-        pas = get_pas()
+        customers = self.customers
+        pas = self.points
 
         r = np.random.random()
         b = np.random.random()
@@ -149,26 +117,6 @@ class NSGAII:
 
         plt.grid()
         plt.show()
-
-    # def print(self)
-    #
-    #     for
-
-    def get_initial_solution(self) -> 'NSGAII':
-        numpy.random.seed(
-            int((datetime.datetime.utcnow() - datetime.timedelta(days=365 * random.randint(0, 20))).timestamp()))
-        access_points: List[PA] = numpy.random.choice(self.get_points_with_space_100(), size=50)
-        for customer in self.customers:
-            distances = [DISTANCES[customer.index][p.index] for p in access_points]
-            closer_point: PA = customer.get_closer_point(points=access_points, distances=distances)
-            if closer_point and closer_point.index not in [p.index for p in self.active_points]:
-                self.active_points.add(closer_point)
-                customer.point_idx = closer_point.index
-        return NSGAII(customers=self.customers, points=self.points,
-                      active_points=self.active_points, fitness=self.fitness,
-                      penal=self.penal,
-                      penal_fitness=self.penal_fitness,
-                      k=self.k, total_distance=self.total_distance)
 
 
 if __name__ == '__main__':
