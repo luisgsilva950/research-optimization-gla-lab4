@@ -120,10 +120,151 @@ class NSGAII:
         plt.grid()
         plt.show()
 
+    def mutation(self):
+        N = len(self.priorities)
+        mutate_priorities = self.priorities
+
+        for i in range(N):
+            if(random.random() < 0.7): #mutation prob = 0.7
+                j = random.sample(range(N),1)
+                mutate_priorities[i], mutate_priorities[j] = mutate_priorities[j], mutate_priorities[i]
+        
+        self.priorities = mutate_priorities
+
+
+def dominate(solution1, solution2): #verifica se geracao1 domina geracao2
+
+  if(solution1.total_distance < solution2.total_distance and solution1.active_points < solution2.active_points):
+    return True
+
+  else:
+    return False
+ 
+def crossover(solutionA,solutionB):
+    N = len(solutionA.priorities)
+    C = [0]*N
+
+    A = solutionA.priorities
+    B = solutionB.priorities
+
+    for i in range(1,int(N/2)+1):
+        indice = A.index(i)
+        C[indice] = A[indice]
+
+    for i in range(int(N/2)+1, N+1):
+        indice = B.index(i)
+        if(C[indice] == 0):
+            C[indice] = B[indice]
+
+        else:
+            for j in range(N):
+                if(C[j] == 0):
+                    C[j] = B[indice]
+                    break
+
+    nsga = NSGAII()
+    return nsga.get_solution(C)
+
+def get_next_generation_solutions(front): #get the first N/2 front elements to the next generation
+    next_gen_solutions = []
+
+    for i in range(len(front)):
+        for objeto in front[i]:
+            if(len(next_gen_solutions) < 50):
+                if(50 - len(next_gen_solutions) > len(front[i])):
+                    next_gen_solutions.append(objeto)
+                else:
+                    next_gen_solutions = next_gen_solutions + (crowding_distance_(front[i], 50 - len(next_gen_solutions)))
+    
+    return next_gen_solutions
+
+def crowding_distance_(front_component, N):
+    points = []
+
+    for i in range(len(front_component)):
+        points.append((front_component[i].total_distance, front_component[i].active_points))
+
+    def crowding_distance(point, other_points):
+        distances = [np.sqrt((point[0] - p[0])**2 + (point[1] - p[1])**2) for p in other_points]
+        return sum(sorted(distances)[1:-1])
+    
+    selected_points = []
+
+    for _ in range(N):
+        crowding_dict = {i: crowding_distance(point, points) for i, point in enumerate(points)}
+        max_crowding_index = max(crowding_dict, key=crowding_dict.get)
+        selected_points.append(points[max_crowding_index])
+        del points[max_crowding_index]
+
+    selected_solutions = []
+
+    for i in range(len(selected_points)):
+        indice = points.index(selected_points[i])
+        selected_solutions.append(front_component[indice])
+
+    return selected_solutions
+
 
 if __name__ == '__main__':
-    solutions = []
+    solution_number = 50
     nsga = NSGAII.from_csv()
+    generation = []
+    first_pop = []
+
+    for i in range(solution_number):
+        s = NSGAII.from_csv()
+        first_pop.append(s)
+    
+    generation = []
+
+    NSGAII_interactions = 50
+
+    population = first_pop
+
+
+
+    for count in range(NSGAII_interactions):
+        front = []
+
+        children = []
+        for i in range(len(population)):
+            j, k = random.sample(range(0, len(population)),2)
+            children.append(crossover(population[j], population[k]))
+
+
+        for i in range(len(population)):
+            children[i].mutation()
+
+        population = population + children
+
+        for i in range(len(population)):
+            population[i].get_solution()
+
+        while(len(population) > 0):
+            for i in range(len(population)):
+                front_atual = []
+
+                Sp = []
+                np = 0
+
+                for j in range(len(population)):
+                    if(dominate(population[i],population[j])):
+                        Sp.append(population[i])
+                    elif(dominate(population[j], population[i])):
+                        np += 1
+
+                if(np == 0):
+                    front_atual.append(population[i])
+            
+            front.append(front_atual)
+
+            population = [elemento for elemento in population if elemento not in front_atual]
+
+        generation.append(front[0])
+
+        population = get_next_generation_solutions(front)
+
+
 
     # start = time.time()
     #
