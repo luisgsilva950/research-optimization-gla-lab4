@@ -56,8 +56,8 @@ class NSGAII:
         # print(self.priorities)
 
     def get_solution(self, priorities: List[int] = None):
-        if self.solution:
-            return self
+        # if self.solution:
+        #     return self
 
         if not priorities:
             priorities = np.random.permutation(len(self.points))
@@ -160,11 +160,13 @@ def crossover(solutionA, solutionB):
     A_idxs = np.argsort(A)
     B_idxs = np.argsort(B)
 
-    for i in range(1, int(N / 2)):
+    corte = np.random.randint(1, NSGAII.max_active_points+1)
+
+    for i in range(1, corte):
         indice = A[A_idxs[i]]
         C[indice] = A[indice]
 
-    for i in range(int(N / 2) + 1, N):
+    for i in range(corte, N):
         indice = B[B_idxs[i]]
         if C[indice] == 0:
             C[indice] = B[indice]
