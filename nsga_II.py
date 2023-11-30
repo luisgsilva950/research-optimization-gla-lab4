@@ -8,6 +8,8 @@ from graphic_plotter import GraphicPlotter
 from models import Customer, PA, Coordinate
 from utils import DISTANCES
 
+NUMBER_OF_SOLUTIONS = 100
+
 
 def get_customers() -> List[Customer]:
     customers = []
@@ -136,11 +138,14 @@ class NSGAII:
         N = len(self.priorities)
         mutate_priorities = self.priorities
 
-        n_exchanges = random.randint(1, 6)
+        n_exchanges = random.randint(1, 20)
+
+        mutate_priorities_idxs = np.argsort(mutate_priorities)
 
         for _ in range(n_exchanges):
-            i, j = random.randint(0, 100 - 1), random.randint(0, N - 1)
-            mutate_priorities[i], mutate_priorities[j] = mutate_priorities[j], mutate_priorities[i]
+            i, j = random.randint(0, NSGAII.max_active_points - 1), random.randint(0, N - 1)
+            mutate_priorities[mutate_priorities_idxs[i]], mutate_priorities[mutate_priorities_idxs[j]] = \
+                mutate_priorities[mutate_priorities_idxs[j]], mutate_priorities[mutate_priorities_idxs[i]]
 
         self.priorities = mutate_priorities
 
@@ -152,7 +157,7 @@ def dominate(solution1, solution2):  # verifica se geracao1 domina geracao2
 
 def crossover(solutionA, solutionB):
     N = len(solutionA.priorities)
-    C = [0] * N
+    C = [None] * N
 
     A = solutionA.priorities
     B = solutionB.priorities
@@ -162,19 +167,19 @@ def crossover(solutionA, solutionB):
 
     corte = np.random.randint(1, NSGAII.max_active_points+1)
 
-    for i in range(1, corte):
-        indice = A[A_idxs[i]]
-        C[indice] = A[indice]
+    for i in range(0, corte):
+        C[A_idxs[i]] = A[A_idxs[i]]
 
-    for i in range(corte, N):
-        indice = B[B_idxs[i]]
-        if C[indice] == 0:
-            C[indice] = B[indice]
+    i, j = corte, 0
+
+    while i < N:
+        pa = B_idxs[j]
+        if C[pa] is None:
+            i += 1
+            C[pa] = i + 1
         else:
-            for j in range(N):
-                if C[j] == 0:
-                    C[j] = B[indice]
-                    break
+            j += 1
+
     return C
 
 
@@ -183,12 +188,12 @@ def get_next_generation_solutions(front):  # get the first N/2 front elements to
 
     for i in range(len(front)):
         for objeto in front[i]:
-            if len(next_gen_solutions) < 50:
-                if 50 - len(next_gen_solutions) > len(front[i]):
+            if len(next_gen_solutions) < NUMBER_OF_SOLUTIONS:
+                if NUMBER_OF_SOLUTIONS - len(next_gen_solutions) > len(front[i]):
                     next_gen_solutions.append(objeto)
                 else:
                     next_gen_solutions = next_gen_solutions + (
-                        crowding_distance_(front[i], 50 - len(next_gen_solutions)))
+                        crowding_distance_(front[i], NUMBER_OF_SOLUTIONS - len(next_gen_solutions)))
 
     return next_gen_solutions
 
@@ -220,11 +225,10 @@ def crowding_distance_(front_component, N):
 
 
 if __name__ == '__main__':
-    solution_number = 50
     generation = []
     first_pop = []
 
-    for i in range(solution_number):
+    for i in range(NUMBER_OF_SOLUTIONS):
         s = NSGAII.from_csv()
         s.get_solution()
         first_pop.append(s)
