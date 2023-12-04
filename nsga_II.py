@@ -8,7 +8,7 @@ from graphic_plotter import GraphicPlotter
 from models import Customer, PA, Coordinate
 from utils import DISTANCES
 
-NUMBER_OF_SOLUTIONS = 100
+NUMBER_OF_SOLUTIONS = 200
 
 
 def get_customers() -> List[Customer]:
@@ -40,6 +40,9 @@ for c in CUSTOMERS:
         if DISTANCES[c.index][p.index] < 85:
             p.possible_customers.append(c)
 
+for pa in PAS:
+    pa.possible_customers = sorted(pa.possible_customers, key=lambda c: c.consume)
+
 
 class NSGAII:
     min_customers_attended = 570
@@ -67,9 +70,15 @@ class NSGAII:
         count_pas, total_distance = 0, 0
         solution = [[] for _ in range(len(self.points))]
         customers_attended = set()
+        b = False
+        max_distance = 0
         for p in priorities:
             point = self.points[p]
             consume = 0
+
+            if b:
+                break
+
             for c in point.possible_customers:
                 if c.index in customers_attended:
                     continue
@@ -81,7 +90,14 @@ class NSGAII:
                 solution[p].append(c.index)
                 customers_attended.add(c.index)
                 consume = next_consume
+
+                if DISTANCES[c.index][p] > max_distance:
+                    max_distance = DISTANCES[c.index][p]
+
                 total_distance += DISTANCES[c.index][p]
+
+                if len(customers_attended) >= len(self.customers) * 0.95:
+                    b = True
 
         customers_count = 0
         for idx, l in enumerate(solution):
@@ -93,6 +109,7 @@ class NSGAII:
         self.priorities = priorities
         self.pas_count = count_pas
         self.total_distance = total_distance
+        self.max_distance = max_distance
         self.solution = solution
 
         return self
@@ -143,9 +160,18 @@ class NSGAII:
         mutate_priorities_idxs = np.argsort(mutate_priorities)
 
         for _ in range(n_exchanges):
-            i, j = random.randint(0, NSGAII.max_active_points - 1), random.randint(0, N - 1)
-            mutate_priorities[mutate_priorities_idxs[i]], mutate_priorities[mutate_priorities_idxs[j]] = \
-                mutate_priorities[mutate_priorities_idxs[j]], mutate_priorities[mutate_priorities_idxs[i]]
+            roleta = np.random.rand()
+            if roleta < 0.33:
+                i, j = random.randint(0, NSGAII.max_active_points // 2), random.randint(NSGAII.max_active_points // 2,
+                                                                                        NSGAII.max_active_points)
+            elif roleta < 0.66:
+                i, j = random.randint(0, NSGAII.max_active_points - 1), random.randint(0, N - 1)
+            else:
+                i, j = random.randint(0, N - 1), random.randint(0, N - 1)
+
+            aux = mutate_priorities[mutate_priorities_idxs[i]]
+            mutate_priorities[mutate_priorities_idxs[i]] = mutate_priorities[mutate_priorities_idxs[j]]
+            mutate_priorities[mutate_priorities_idxs[j]] = aux
 
         self.priorities = mutate_priorities
 
@@ -165,7 +191,7 @@ def crossover(solutionA, solutionB):
     A_idxs = np.argsort(A)
     B_idxs = np.argsort(B)
 
-    corte = np.random.randint(1, NSGAII.max_active_points+1)
+    corte = np.random.randint(1, NSGAII.max_active_points + 1)
 
     for i in range(0, corte):
         C[A_idxs[i]] = A[A_idxs[i]]
@@ -225,6 +251,7 @@ def crowding_distance_(front_component, N):
 
 
 if __name__ == '__main__':
+
     generation = []
     first_pop = []
 
@@ -236,19 +263,21 @@ if __name__ == '__main__':
     print("Soluções iniciais geradas...")
     generation = []
 
-    NSGAII_interactions = 50
+    NSGAII_interactions = 500
 
     population = first_pop
 
     for count in range(NSGAII_interactions):
         front = []
+        print(f"Iteração Atual: {count}")
 
         # print("NSGAII_interactions")
         children_priorities = []
         children = []
         for i in range(len(population)):
             # print("i_population")
-            j, k = random.sample(range(0, len(population)), 2)
+            j = random.randint(0, 0.1 * len(population))
+            k = random.randint(0, len(population) - 1)
             children_priorities.append(crossover(population[j], population[k]))
 
         for i in range(len(children_priorities)):
@@ -261,7 +290,7 @@ if __name__ == '__main__':
         population = population + children
 
         new_solutions_count = 0
-        while new_solutions_count < 100:
+        while new_solutions_count < 2 * NUMBER_OF_SOLUTIONS:
             remove_idxs = set()
             front_atual = []
             for i in range(len(population)):
@@ -303,3 +332,26 @@ if __name__ == '__main__':
         print([min_pas_count, min_total_distance])
 
         population = get_next_generation_solutions(front)
+
+    coordinates = []
+    for solution in front[0]:
+        # import matplotlib.pyplot as plt
+        #
+        # r = numpy.random.random()
+        # b = numpy.random.random()
+        # g = numpy.random.random()
+        # color = (r, g, b)
+        coordinates.append((solution.pas_count, solution.total_distance))
+        # s.plot()
+        # print(s.max_distance)
+        # plt.plot(s.pas_count, s.total_distance, '^', c=color)
+        # plt.grid()
+
+    # plt.show()
+
+    r = 100, 100_000
+
+    from pymoo.indicators.hv import HV
+
+    ind = HV(ref_point=np.array(r))
+    print("HV", ind(np.array(coordinates)))
