@@ -1,6 +1,10 @@
 import random
 from typing import List
 
+import matplotlib.pyplot as plt
+
+import time
+
 import numpy as np
 import numpy.random
 
@@ -263,9 +267,14 @@ if __name__ == '__main__':
     print("Soluções iniciais geradas...")
     generation = []
 
-    NSGAII_interactions = 500
+    NSGAII_interactions = 10
 
     population = first_pop
+
+    time_init = time.time()
+
+    min_PAs_generation = []
+    min_distance_generation = []
 
     for count in range(NSGAII_interactions):
         front = []
@@ -276,7 +285,7 @@ if __name__ == '__main__':
         children = []
         for i in range(len(population)):
             # print("i_population")
-            j = random.randint(0, 0.1 * len(population))
+            j = random.randint(0, int(0.1 * len(population)))
             k = random.randint(0, len(population) - 1)
             children_priorities.append(crossover(population[j], population[k]))
 
@@ -331,7 +340,24 @@ if __name__ == '__main__':
         min_total_distance = min([n.total_distance for n in front[0]])
         print([min_pas_count, min_total_distance])
 
+        min_distance_generation.append(min_total_distance)
+        min_PAs_generation.append(min_pas_count)
+
+
         population = get_next_generation_solutions(front)
+
+    time_end = time.time()
+    total_time = time_end - time_init
+
+    print(f"Tempo de execução: {total_time:.6f} segundos.")
+
+    fig, axs = plt.subplots(2)
+    axs[0].plot(min_distance_generation)
+    axs[0].set_title('Evolução da soma das distancias por geração')
+    axs[1].plot(min_PAs_generation)
+    axs[1].set_title('Evolução do número de PAs por geração')
+    plt.tight_layout()
+    plt.show()
 
     coordinates = []
     for solution in front[0]:
