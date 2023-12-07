@@ -30,7 +30,6 @@ def plot_heuristic(file_name: str):
             line = fp.readline()
 
     import matplotlib.pyplot as plt
-    import numpy as np
 
     plt.figure(figsize=(15, 6))
 
@@ -41,7 +40,23 @@ def plot_heuristic(file_name: str):
     plt.ylabel('Values')
     plt.title(title.replace("\n", "") + " - f1")
     plt.show()
-    plt.savefig(f'./images/{file_name.replace(".txt", "")}.png')
+    plt.savefig(f'./images/{file_name.replace(".txt", "")}_f1.png')
+
+    plt.boxplot(f2s, positions=range(1, len(f2s) + 1), bootstrap=5000)
+    plt.xticks(rotation=45)
+    plt.xlabel('Generation Number')
+    plt.ylabel('Values')
+    plt.title(title.replace("\n", "") + " - f2")
+    plt.show()
+    plt.savefig(f'./images/{file_name.replace(".txt", "")}_f2.png')
+
+    plt.boxplot([[h] for h in hipervolumes], positions=range(1, len(hipervolumes) + 1), bootstrap=5000)
+    plt.xticks(rotation=45)
+    plt.xlabel('Generation Number')
+    plt.ylabel('Values')
+    plt.title(title.replace("\n", "") + " - hipervolume")
+    plt.show()
+    plt.savefig(f'./images/{file_name.replace(".txt", "")}_hipervolume.png')
 
 
 if __name__ == '__main__':
