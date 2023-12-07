@@ -7,6 +7,10 @@ directory_path = './results'
 
 
 def plot_heuristic(file_name: str):
+    plt.clf()  # Limpa a figura atual
+    plt.cla()  # Limpa os eixos atuais
+    plt.close()  # Fecha a figura atual, liberando recursos
+
     title = ""
     f1s = []
     f2s = []
@@ -34,7 +38,7 @@ def plot_heuristic(file_name: str):
     plt.figure(figsize=(15, 6))
 
     # Plot the boxplot
-    plt.boxplot(f1s, positions=range(1, len(f1s) + 1), bootstrap=5000)
+    plt.boxplot(f1s, positions=range(1, len(f1s) + 1), sym='k+')
     plt.xticks(rotation=45)
     plt.xlabel('Generation Number')
     plt.ylabel('Values')
@@ -42,7 +46,14 @@ def plot_heuristic(file_name: str):
     # plt.show()
     plt.savefig(f'./images/{file_name.replace(".txt", "")}_f1.png')
 
-    plt.boxplot(f2s, positions=range(1, len(f2s) + 1), bootstrap=5000)
+
+    plt.clf()  # Limpa a figura atual
+    plt.cla()  # Limpa os eixos atuais
+    plt.close()  # Fecha a figura atual, liberando recursos
+
+    plt.figure(figsize=(15, 6))
+
+    plt.boxplot(f2s, positions=range(1, len(f2s) + 1), sym='k+')
     plt.xticks(rotation=45)
     plt.xlabel('Generation Number')
     plt.ylabel('Values')
@@ -50,13 +61,19 @@ def plot_heuristic(file_name: str):
     # plt.show()
     plt.savefig(f'./images/{file_name.replace(".txt", "")}_f2.png')
 
-    plt.boxplot([[h] for h in hipervolumes], positions=range(1, len(hipervolumes) + 1), bootstrap=5000)
-    plt.xticks(rotation=45)
-    plt.xlabel('Generation Number')
-    plt.ylabel('Values')
-    plt.title(title.replace("\n", "") + " - hipervolume")
-    # plt.show()
-    plt.savefig(f'./images/{file_name.replace(".txt", "")}_hipervolume.png')
+    plt.clf()  # Limpa a figura atual
+    plt.cla()  # Limpa os eixos atuais
+    plt.close()  # Fecha a figura atual, liberando recursos
+
+    plt.figure(figsize=(15, 6))
+
+    # plt.boxplot([[h] for h in hipervolumes], positions=range(1, len(hipervolumes) + 1), bootstrap=5000)
+    # plt.xticks(rotation=45)
+    # plt.xlabel('Generation Number')
+    # plt.ylabel('Values')
+    # plt.title(title.replace("\n", "") + " - hipervolume")
+    # # plt.show()
+    # plt.savefig(f'./images/{file_name.replace(".txt", "")}_hipervolume.png')
 
 
 if __name__ == '__main__':
