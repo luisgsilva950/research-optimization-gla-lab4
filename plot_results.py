@@ -1,5 +1,7 @@
-import os
 import json
+import os
+
+import matplotlib.pyplot as plt
 
 directory_path = './results'
 
@@ -29,8 +31,6 @@ def plot_heuristic(file_name: str):
 
             line = fp.readline()
 
-    import matplotlib.pyplot as plt
-
     plt.figure(figsize=(15, 6))
 
     # Plot the boxplot
@@ -39,7 +39,7 @@ def plot_heuristic(file_name: str):
     plt.xlabel('Generation Number')
     plt.ylabel('Values')
     plt.title(title.replace("\n", "") + " - f1")
-    plt.show()
+    # plt.show()
     plt.savefig(f'./images/{file_name.replace(".txt", "")}_f1.png')
 
     plt.boxplot(f2s, positions=range(1, len(f2s) + 1), bootstrap=5000)
@@ -47,7 +47,7 @@ def plot_heuristic(file_name: str):
     plt.xlabel('Generation Number')
     plt.ylabel('Values')
     plt.title(title.replace("\n", "") + " - f2")
-    plt.show()
+    # plt.show()
     plt.savefig(f'./images/{file_name.replace(".txt", "")}_f2.png')
 
     plt.boxplot([[h] for h in hipervolumes], positions=range(1, len(hipervolumes) + 1), bootstrap=5000)
@@ -55,7 +55,7 @@ def plot_heuristic(file_name: str):
     plt.xlabel('Generation Number')
     plt.ylabel('Values')
     plt.title(title.replace("\n", "") + " - hipervolume")
-    plt.show()
+    # plt.show()
     plt.savefig(f'./images/{file_name.replace(".txt", "")}_hipervolume.png')
 
 
