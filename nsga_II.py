@@ -45,7 +45,7 @@ for c in CUSTOMERS:
             p.possible_customers.append(c)
 
 for pa in PAS:
-    pa.possible_customers = sorted(pa.possible_customers, key=lambda c: c.consume)
+    pa.possible_customers = sorted(pa.possible_customers, key=lambda c: DISTANCES[c.index][pa.index])
 
 
 class NSGAII:
@@ -76,12 +76,17 @@ class NSGAII:
         customers_attended = set()
         b = False
         max_distance = 0
-        for p in priorities:
+        sorted_priorities = np.argsort(priorities)
+        for p in sorted_priorities:
             point = self.points[p]
             consume = 0
 
             if b:
                 break
+
+            if len(point.possible_customers) < 5:
+               continue
+
 
             for c in point.possible_customers:
                 if c.index in customers_attended:
@@ -165,13 +170,11 @@ class NSGAII:
 
         for _ in range(n_exchanges):
             roleta = np.random.rand()
-            if roleta < 0.33:
-                i, j = random.randint(0, NSGAII.max_active_points // 2), random.randint(NSGAII.max_active_points // 2,
-                                                                                        NSGAII.max_active_points)
-            elif roleta < 0.66:
-                i, j = random.randint(0, NSGAII.max_active_points - 1), random.randint(0, N - 1)
+            if roleta < 0.5:
+                i = random.randint(0, 20 // 2)
+                j = abs(random.randint(i-3, i+3))
             else:
-                i, j = random.randint(0, N - 1), random.randint(0, N - 1)
+                i, j = random.randint(0, NUMBER_OF_SOLUTIONS  - 1), random.randint(0, N - 1)
 
             aux = mutate_priorities[mutate_priorities_idxs[i]]
             mutate_priorities[mutate_priorities_idxs[i]] = mutate_priorities[mutate_priorities_idxs[j]]
@@ -255,129 +258,105 @@ def crowding_distance_(front_component, N):
 
 
 if __name__ == '__main__':
+    for __ in range(50):
+        generation = []
+        first_pop = []
 
-    generation = []
-    first_pop = []
+        for i in range(NUMBER_OF_SOLUTIONS):
+            s = NSGAII.from_csv()
+            s.get_solution()
+            first_pop.append(s)
 
-    for i in range(NUMBER_OF_SOLUTIONS):
-        s = NSGAII.from_csv()
-        s.get_solution()
-        first_pop.append(s)
+        print("Soluções iniciais geradas...")
+        generation = []
 
-    print("Soluções iniciais geradas...")
-    generation = []
+        NSGAII_interactions = 50
 
-    NSGAII_interactions = 10
+        population = first_pop
 
-    population = first_pop
+        min_PAs_generation = []
+        min_distance_generation = []
 
-    time_init = time.time()
+        for count in range(NSGAII_interactions):
+            front = []
+            print(f"Iteração Atual: {count}")
 
-    min_PAs_generation = []
-    min_distance_generation = []
-
-    for count in range(NSGAII_interactions):
-        front = []
-        print(f"Iteração Atual: {count}")
-
-        # print("NSGAII_interactions")
-        children_priorities = []
-        children = []
-        for i in range(len(population)):
-            # print("i_population")
-            j = random.randint(0, int(0.1 * len(population)))
-            k = random.randint(0, len(population) - 1)
-            children_priorities.append(crossover(population[j], population[k]))
-
-        for i in range(len(children_priorities)):
-            # print("i_children_priorities")
-            c = NSGAII(customers=CUSTOMERS, points=PAS, priorities=children_priorities[i])
-            c.mutation()
-            c.get_solution()
-            children.append(c)
-
-        population = population + children
-
-        new_solutions_count = 0
-        while new_solutions_count < 2 * NUMBER_OF_SOLUTIONS:
-            remove_idxs = set()
-            front_atual = []
+            children_priorities = []
+            children = []
             for i in range(len(population)):
-                Sp = []
-                non_p = 0
+                # print("i_population")
+                j = random.randint(0, int(0.1 * len(population)))
+                k = random.randint(0, len(population) - 1)
+                children_priorities.append(crossover(population[j], population[k]))
 
-                for j in range(len(population)):
-                    if dominate(population[i], population[j]):
-                        Sp.append(population[i])
-                    elif dominate(population[j], population[i]):
-                        non_p += 1
+            for i in range(len(children_priorities)):
+                # print("i_children_priorities")
+                c = NSGAII(customers=CUSTOMERS, points=PAS, priorities=children_priorities[i])
+                c.mutation()
+                c.get_solution()
+                children.append(c)
 
-                if non_p == 0:
-                    new_solutions_count += 1
-                    remove_idxs.add(i)
-                    front_atual.append(population[i])
+            for i in range(len(population)):
+                population[i].mutation()
 
-            population = [p for idx, p in enumerate(population) if idx not in remove_idxs]
+            population = population + children
 
-            front.append(front_atual)
+            new_solutions_count = 0
+            while new_solutions_count < 2 * NUMBER_OF_SOLUTIONS:
+                remove_idxs = set()
+                front_atual = []
+                for i in range(len(population)):
+                    Sp = []
+                    non_p = 0
 
-        # for solutions in front:
-        #     import matplotlib.pyplot as plt
-        #
-        #     r = numpy.random.random()
-        #     b = numpy.random.random()
-        #     g = numpy.random.random()
-        #     color = (r, g, b)
-        #     for s in solutions:
-        #         plt.plot(s.pas_count, s.total_distance, '^', c=color)
-        #         plt.grid()
-        #
+                    for j in range(len(population)):
+                        if dominate(population[i], population[j]):
+                            Sp.append(population[i])
+                        elif dominate(population[j], population[i]):
+                            non_p += 1
+
+                    if non_p == 0:
+                        new_solutions_count += 1
+                        remove_idxs.add(i)
+                        front_atual.append(population[i])
+
+                population = [p for idx, p in enumerate(population) if idx not in remove_idxs]
+
+                front.append(front_atual)
+
+            generation.append(front[0])
+
+            min_pas_count = min([n.pas_count for n in front[0]])
+            min_total_distance = min([n.total_distance for n in front[0]])
+            print([min_pas_count, min_total_distance])
+
+            min_distance_generation.append(min_total_distance)
+            min_PAs_generation.append(min_pas_count)
+
+
+            population = get_next_generation_solutions(front)
+
+        # fig, axs = plt.subplots(2)
+        # axs[0].plot(min_distance_generation)
+        # axs[0].set_title('Evolução da soma das distancias por geração')
+        # axs[1].plot(min_PAs_generation)
+        # axs[1].set_title('Evolução do número de PAs por geração')
+        # plt.tight_layout()
         # plt.show()
 
-        generation.append(front[0])
+        coordinates = []
+        for solutions in front[0]:
+            #solutions.plot()
+            coordinates.append((solutions.pas_count, solutions.total_distance))
+            
+        r = 100, 100_000
 
-        min_pas_count = min([n.pas_count for n in front[0]])
-        min_total_distance = min([n.total_distance for n in front[0]])
-        print([min_pas_count, min_total_distance])
+        print(coordinates)
 
-        min_distance_generation.append(min_total_distance)
-        min_PAs_generation.append(min_pas_count)
+        from pymoo.indicators.hv import HV
 
+        ind = HV(ref_point=np.array(r))
+        print("HV", ind(np.array(coordinates)))
 
-        population = get_next_generation_solutions(front)
-
-    time_end = time.time()
-    total_time = time_end - time_init
-
-    print(f"Tempo de execução: {total_time:.6f} segundos.")
-
-    fig, axs = plt.subplots(2)
-    axs[0].plot(min_distance_generation)
-    axs[0].set_title('Evolução da soma das distancias por geração')
-    axs[1].plot(min_PAs_generation)
-    axs[1].set_title('Evolução do número de PAs por geração')
-    plt.tight_layout()
-    plt.show()
-
-    coordinates = []
-    for solution in front[0]:
-        # import matplotlib.pyplot as plt
-        #
-        # r = numpy.random.random()
-        # b = numpy.random.random()
-        # g = numpy.random.random()
-        # color = (r, g, b)
-        coordinates.append((solution.pas_count, solution.total_distance))
-        # s.plot()
-        # print(s.max_distance)
-        # plt.plot(s.pas_count, s.total_distance, '^', c=color)
-        # plt.grid()
-
-    # plt.show()
-
-    r = 100, 100_000
-
-    from pymoo.indicators.hv import HV
-
-    ind = HV(ref_point=np.array(r))
-    print("HV", ind(np.array(coordinates)))
+        with open('dados.txt', 'a') as arquivo:
+            arquivo.write(f'{coordinates}, {ind(np.array(coordinates))}\n')
